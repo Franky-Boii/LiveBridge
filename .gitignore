@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Next.js build and dev cache
+.next/
+out/
+build/
+
+# Local Environment Variables (CRITICAL)
+.env*.local
+.env
+
+# IDE settings
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
