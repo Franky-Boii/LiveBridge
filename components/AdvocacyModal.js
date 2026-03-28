@@ -9,7 +9,7 @@ export default function AdvocacyModal({ isOpen, onClose }) {
           Notice for Employers
         </h2>
         <p className="text-slate-600 text-lg leading-relaxed mb-8 font-medium">
-          "Hi, I use **real-time AI technology** to communicate. This tool allows us to have a seamless, inclusive conversation. Deaf professionals contribute equal value, communication is just a bridge away."
+          "Hi, I use real-time AI technology to communicate. This tool allows us to have a seamless, inclusive conversation. Deaf professionals contribute equal value, communication is just a bridge away."
         </p>
         <button 
           onClick={onClose}
