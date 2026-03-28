@@ -163,7 +163,7 @@ export default function LiveBridge() {
 
       <footer className="py-4 text-center border-t border-slate-100 mt-4">
         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-[0.3em]">
-          Inspired by Maliviwe • Breaking Barriers
+         • Breaking Barriers
         </p>
       </footer>
     </div>
