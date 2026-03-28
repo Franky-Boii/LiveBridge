@@ -3,11 +3,10 @@ import HearingMode from '../components/HearingMode';
 import DeafMode from '../components/DeafMode';
 import TranscriptView from '../components/TranscriptView';
 import AdvocacyModal from '../components/AdvocacyModal';
-import { supabase } from '../lib/supabase'; // 👈 IMPORTANT: Create this file first!
+import { supabase } from '../lib/supabase';
 
 export default function LiveBridge() {
-  // --- 1. STATES ---
-  const [activeMode, setActiveMode] = useState(null); // Changed from 'hearing' to null for the Role Picker
+  const [activeMode, setActiveMode] = useState(null); 
   const [roomID, setRoomID] = useState("GLOBAL-BRIDGE-1"); 
   const [transcript, setTranscript] = useState("");
   const [history, setHistory] = useState([]);
@@ -16,11 +15,10 @@ export default function LiveBridge() {
   const [isInterviewMode, setIsInterviewMode] = useState(false);
   const [showAdvocacy, setShowAdvocacy] = useState(false);
 
-  // --- 2. REALTIME SYNC (The "Global" Logic) ---
+  // --- 📡 REALTIME SYNC ---
   useEffect(() => {
     if (!roomID) return;
 
-    // Listen for new messages in this room across ALL devices
     const channel = supabase
       .channel(`room-${roomID}`)
       .on('postgres_changes', { 
@@ -31,13 +29,13 @@ export default function LiveBridge() {
       }, (payload) => {
         const newMessage = payload.new;
         
-        // Update history for everyone
+        // 1. Add to history for everyone
         setHistory(prev => [...prev, {
           ...newMessage,
-          time: new Date(newMessage.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }]);
 
-        // If you are in Deaf Mode and a Hearing person speaks, update your screen
+        // 2. IMPORTANT: Update the active transcript if it's from the hearing person
         if (newMessage.sender === 'hearing') {
           setTranscript(newMessage.text);
         }
@@ -47,44 +45,37 @@ export default function LiveBridge() {
     return () => supabase.removeChannel(channel);
   }, [roomID]);
 
-  // --- 3. SEND FUNCTION (Replaces addToHistory) ---
+  // --- 📤 SEND FUNCTION ---
   const handleMessagePush = async (sender, text) => {
+    // We clear the transcript locally first to show "processing" state
+    if (sender === 'hearing') setTranscript(""); 
+    
     const { error } = await supabase.from('messages').insert([
       { room_id: roomID, sender: sender, text: text }
     ]);
     if (error) console.error("Sync Error:", error);
   };
 
-  // --- 4. THE ROLE PICKER (Early Return) ---
+  // --- early return for Role Picker ---
   if (!activeMode) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-slate-50 text-center">
         <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-slate-800">LIVEBRIDGE</h1>
-        <p className="text-slate-500 mb-10 font-medium uppercase text-[10px] tracking-[0.3em]">Breaking Barriers Globally</p>
-        
+        <p className="text-slate-500 mb-10 font-medium uppercase text-[10px] tracking-[0.3em]">Remote Bridge Active</p>
         <div className="w-full max-w-xs space-y-4">
-          <button 
-            onClick={() => setActiveMode('hearing')}
-            className="w-full bg-blue-600 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 active:scale-95 transition-transform"
-          >
+          <button onClick={() => setActiveMode('hearing')} className="w-full bg-blue-600 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 active:scale-95 transition-transform">
             I am Hearing 🎤
           </button>
-          <button 
-            onClick={() => setActiveMode('deaf')}
-            className="w-full bg-slate-800 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-transform"
-          >
+          <button onClick={() => setActiveMode('deaf')} className="w-full bg-slate-800 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-transform">
             I am Deaf/HoH 📱
           </button>
         </div>
-        <p className="mt-8 text-[10px] font-bold text-slate-300 uppercase">Room: {roomID}</p>
       </div>
     );
   }
 
-  // --- 5. MAIN BRIDGE UI ---
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col p-4 max-w-md mx-auto shadow-2xl border-x border-slate-100 relative">
-      
       <AdvocacyModal isOpen={showAdvocacy} onClose={() => setShowAdvocacy(false)} />
 
       <header className="flex flex-col gap-4 py-6">
@@ -95,42 +86,37 @@ export default function LiveBridge() {
               LIVE<span className="text-blue-600">BRIDGE</span>
             </h1>
           </div>
-          <button onClick={() => setShowAdvocacy(true)} className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl text-[10px] font-bold uppercase border border-amber-200 animate-bounce">
+          
+          {/* 🔄 FIXED: Back/Switch Role Button */}
+          <button 
+            onClick={() => setActiveMode(null)}
+            className="text-[9px] font-black uppercase bg-slate-100 px-2 py-1 rounded-md text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all"
+          >
+            ↺ Switch Role
+          </button>
+
+          <button onClick={() => setShowAdvocacy(true)} className="bg-amber-100 text-amber-700 px-3 py-2 rounded-xl text-[10px] font-bold uppercase border border-amber-200">
             💡 For Employers
           </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-            <select 
-              value={language} 
-              onChange={(e) => setLanguage(e.target.value)}
-              className="w-full bg-transparent text-[10px] font-black uppercase text-blue-600 outline-none"
-            >
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-transparent text-[10px] font-black uppercase text-blue-600 outline-none">
                <optgroup label="Africa">
                 <option value="en-ZA">English (SA) 🇿🇦</option>
                 <option value="zu-ZA">isiZulu 🇿🇦</option>
                 <option value="xh-ZA">isiXhosa 🇿🇦</option>
               </optgroup>
               <option value="en-US">English (US) 🇺🇸</option>
-              {/* ... include your other options here ... */}
             </select>
           </div>
-
-          <button 
-            onClick={() => setIsInterviewMode(!isInterviewMode)}
-            className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border ${
-              isInterviewMode ? "bg-blue-600 text-white border-blue-700" : "bg-white text-slate-400 border-slate-200"
-            }`}
-          >
-            {isInterviewMode ? "🎯 Interview Mode" : "💼 Standard Mode"}
+          <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${isInterviewMode ? "bg-blue-600 text-white border-blue-700" : "bg-white text-slate-400 border-slate-200"}`}>
+            {isInterviewMode ? "🎯 Interview" : "💼 Standard"}
           </button>
         </div>
 
-        <button 
-          onClick={() => setActiveMode(activeMode === "history" ? "hearing" : "history")}
-          className="bg-slate-800 text-white py-2 rounded-xl text-[10px] font-bold uppercase"
-        >
+        <button onClick={() => setActiveMode(activeMode === "history" ? "hearing" : "history")} className="bg-slate-800 text-white py-2 rounded-xl text-[10px] font-bold uppercase">
           {activeMode === "history" ? "← Back to Bridge" : "📜 Transcript History"}
         </button>
       </header>
