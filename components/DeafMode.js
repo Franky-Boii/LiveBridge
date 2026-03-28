@@ -42,50 +42,44 @@ export default function DeafMode({ incomingText, isRemoteSpeaking, selectedVoice
 
   return (
     <div className="flex-1 flex flex-col space-y-4 pt-2">
-      {/* 🌊 VISUAL AUDIO WAVEFORM */}
-      <div className="flex items-center gap-2 px-2">
-        <div className="flex items-center gap-1 h-3">
-          {[1, 2, 3, 4].map((i) => (
+      
+      {/* 🌊 THE LIVE WAVEFORM (Shows up when Hearing person speaks) */}
+      <div className="flex items-center justify-between px-4 py-2 bg-blue-50 rounded-2xl border border-blue-100">
+        <div className="flex items-center gap-1.5 h-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div 
               key={i} 
-              className={`w-1 bg-blue-500 rounded-full transition-all duration-300 ${isRemoteSpeaking ? 'animate-bounce' : 'h-1 opacity-20'}`} 
-              style={{ animationDelay: `${i * 0.1}s`, height: isRemoteSpeaking ? '100%' : '20%' }}
+              className={`w-1 rounded-full bg-blue-500 transition-all duration-300 ${
+                isRemoteSpeaking ? 'animate-bounce' : 'h-1 opacity-20'
+              }`} 
+              style={{ 
+                animationDelay: `${i * 0.1}s`, 
+                height: isRemoteSpeaking ? '100%' : '15%' 
+              }}
             />
           ))}
         </div>
-        <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">
-          {isRemoteSpeaking ? 'Speaker is talking...' : 'Waiting for audio...'}
+        <span className={`text-[10px] font-black uppercase tracking-widest ${isRemoteSpeaking ? 'text-blue-600' : 'text-slate-400'}`}>
+          {isRemoteSpeaking ? 'Speaker is talking...' : 'Room is quiet'}
         </span>
       </div>
 
-      <div className="flex items-center gap-2 bg-blue-600 p-2 rounded-xl text-white shadow-md">
-        <span className="text-[10px] font-black ml-1 uppercase text-blue-100">Voice:</span>
-        <select value={selectedVoiceURI} onChange={(e) => onVoiceChange(e.target.value)} className="bg-transparent text-[10px] font-black uppercase outline-none flex-1 truncate">
-          {voices.map(v => <option className="text-black" key={v.voiceURI} value={v.voiceURI}>{v.name}</option>)}
-        </select>
-      </div>
+      {/* ... rest of your DeafMode code (Voice selection and Message area) ... */}
 
-      <div className={`bg-white p-6 rounded-[32px] shadow-xl border-2 transition-all min-h-[160px] flex items-center ${incomingText ? 'border-blue-500' : 'border-blue-50'}`}>
-        <p className="text-3xl font-black text-slate-800 leading-tight">{incomingText || "..."}</p>
-      </div>
-
-      {/* ✨ SMART SUGGESTIONS */}
-      <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {suggestions.map(label => (
+      {/* ✨ SMART AI REPLIES (Place this right above the text area) */}
+      <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+        {["Can you repeat?", "I understand.", "Let's proceed.", "Thank you!"].map((label) => (
           <button 
-            key={label} 
-            onClick={() => handleSpeak(label)} 
-            className="whitespace-nowrap bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-tight hover:bg-blue-50 hover:text-blue-600 transition-all"
+            key={label}
+            onClick={() => handleSpeak(label)}
+            className="whitespace-nowrap bg-white border-2 border-slate-100 text-slate-600 px-4 py-2 rounded-full text-[10px] font-black uppercase hover:border-blue-500 hover:text-blue-600 transition-all active:scale-95"
           >
             {label}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 flex flex-col justify-end gap-3 pb-6">
-        <textarea className="w-full p-5 text-xl rounded-[24px] border-2 border-slate-100 focus:border-blue-600 outline-none font-medium" placeholder="Type reply..." value={reply} onChange={(e) => setReply(e.target.value)} rows={2} />
-        <button onClick={() => handleSpeak()} className="w-full bg-blue-600 text-white font-black py-5 rounded-3xl text-xl shadow-xl active:scale-95 transition-all uppercase tracking-tighter">Speak Response</button>
-      </div>
+      {/* ... rest of the input area ... */}
     </div>
   );
 }
