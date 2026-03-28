@@ -13,11 +13,10 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "openai": "^4.0.0",
-    "lucide-react": "latest"
+    "tailwindcss": "^4.2.2",
+    "@tailwindcss/postcss": "latest",
+    "postcss": "^8.5.8",
+    "autoprefixer": "latest"
   },
-  "devDependencies": {
-    "autoprefixer": "latest",
-    "postcss": "latest",
-    "tailwindcss": "latest"
-  }
+  "devDependencies": {}
 }
