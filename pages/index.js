@@ -29,16 +29,27 @@ export default function LiveBridge() {
       }, (payload) => {
         const newMessage = payload.new;
         
-        // 1. Add to history for everyone
-        setHistory(prev => [...prev, {
-          ...newMessage,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }]);
+        setHistory(prev => {
+          // Prevent duplicates if the network sends the same event twice
+          if (prev.find(m => m.id === newMessage.id)) return prev;
+          return [...prev, {
+            ...newMessage,
+            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }];
+        });
 
-        // 2. IMPORTANT: Update the active transcript if it's from the hearing person
         if (newMessage.sender === 'hearing') {
           setTranscript(newMessage.text);
         }
+      })
+      // NEW: Listen for deletions so the screen clears for everyone at once
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'messages' 
+      }, () => {
+        setHistory([]);
+        setTranscript("");
       })
       .subscribe();
 
@@ -47,20 +58,29 @@ export default function LiveBridge() {
 
   // --- 📤 SEND FUNCTION ---
   const handleMessagePush = async (sender, text) => {
-    // We clear the transcript locally first to show "processing" state
     if (sender === 'hearing') setTranscript(""); 
-    
     const { error } = await supabase.from('messages').insert([
       { room_id: roomID, sender: sender, text: text }
     ]);
     if (error) console.error("Sync Error:", error);
   };
 
-  // --- early return for Role Picker ---
+  // --- 🗑️ CLEAR CHAT FUNCTION ---
+  const clearChat = async () => {
+    if (window.confirm("Delete all messages in this room?")) {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('room_id', roomID);
+      
+      if (error) alert("Error clearing chat. Check Supabase RLS policies.");
+    }
+  };
+
   if (!activeMode) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-slate-50 text-center">
-        <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-slate-800">LIVEBRIDGE</h1>
+        <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-slate-800 uppercase">LiveBridge</h1>
         <p className="text-slate-500 mb-10 font-medium uppercase text-[10px] tracking-[0.3em]">Remote Bridge Active</p>
         <div className="w-full max-w-xs space-y-4">
           <button onClick={() => setActiveMode('hearing')} className="w-full bg-blue-600 text-white p-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 active:scale-95 transition-transform">
@@ -87,7 +107,6 @@ export default function LiveBridge() {
             </h1>
           </div>
           
-          {/* 🔄 FIXED: Back/Switch Role Button */}
           <button 
             onClick={() => setActiveMode(null)}
             className="text-[9px] font-black uppercase bg-slate-100 px-2 py-1 rounded-md text-slate-500 hover:bg-blue-50 hover:text-blue-600 transition-all"
@@ -102,7 +121,7 @@ export default function LiveBridge() {
 
         <div className="grid grid-cols-2 gap-2">
           <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
-            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-transparent text-[10px] font-black uppercase text-blue-600 outline-none">
+            <select value={language} onChange={(e) => setLanguage(e.target.value)} className="w-full bg-transparent text-[10px] font-black uppercase text-blue-600 outline-none cursor-pointer">
                <optgroup label="Africa">
                 <option value="en-ZA">English (SA) 🇿🇦</option>
                 <option value="zu-ZA">isiZulu 🇿🇦</option>
@@ -111,12 +130,12 @@ export default function LiveBridge() {
               <option value="en-US">English (US) 🇺🇸</option>
             </select>
           </div>
-          <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${isInterviewMode ? "bg-blue-600 text-white border-blue-700" : "bg-white text-slate-400 border-slate-200"}`}>
+          <button onClick={() => setIsInterviewMode(!isInterviewMode)} className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase transition-all border ${isInterviewMode ? "bg-blue-600 text-white border-blue-700 shadow-lg shadow-blue-100" : "bg-white text-slate-400 border-slate-200"}`}>
             {isInterviewMode ? "🎯 Interview" : "💼 Standard"}
           </button>
         </div>
 
-        <button onClick={() => setActiveMode(activeMode === "history" ? "hearing" : "history")} className="bg-slate-800 text-white py-2 rounded-xl text-[10px] font-bold uppercase">
+        <button onClick={() => setActiveMode(activeMode === "history" ? "hearing" : "history")} className="bg-slate-800 text-white py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-md">
           {activeMode === "history" ? "← Back to Bridge" : "📜 Transcript History"}
         </button>
       </header>
@@ -140,7 +159,20 @@ export default function LiveBridge() {
           />
         )}
 
-        {activeMode === "history" && <TranscriptView history={history} />}
+        {activeMode === "history" && (
+          <div className="flex flex-col h-full">
+            <div className="flex justify-between items-center mb-4 px-2">
+              <h2 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Global Room Logs</h2>
+              <button 
+                onClick={clearChat}
+                className="text-[9px] font-bold text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors border border-red-100"
+              >
+                🗑️ Clear Session
+              </button>
+            </div>
+            <TranscriptView history={history} />
+          </div>
+        )}
       </main>
 
       <footer className="py-4 text-center border-t border-slate-100 mt-4">
