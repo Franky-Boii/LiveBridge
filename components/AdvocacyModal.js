@@ -1,25 +1,22 @@
-const AdvocacyCard = ({ isOpen, onClose, userName }) => {
+export default function AdvocacyModal({ isOpen, onClose, userName }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-6">
-      <div className="bg-white rounded-2xl p-8 max-w-md border-l-8 border-blue-600 shadow-2xl">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Hello! I’m {userName}.</h2>
-        <p className="text-lg text-gray-700 leading-relaxed mb-6">
-          I use **LiveBridge AI** to communicate. It translates your speech into clear, 
-          real-time text so I can follow our conversation perfectly. 
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-6">
+      <div className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border-t-8 border-blue-600">
+        <div className="text-4xl mb-4">💡</div>
+        <h2 className="text-2xl font-black text-slate-800 mb-2">Notice for Employers</h2>
+        <p className="text-slate-600 leading-relaxed mb-6 font-medium">
+          "I am <span className="text-blue-600 font-bold">{userName}</span>. I use real-time AI technology to communicate. This tool allows us to have a seamless, inclusive conversation. 
+          <br/><br/>
+          Deaf professionals contribute equal value—communication is just a bridge away."
         </p>
-        <div className="bg-blue-50 p-4 rounded-lg mb-6">
-          <p className="text-sm text-blue-800 font-semibold italic">
-            "Deaf professionals contribute equal value—communication is just a bridge away."
-          </p>
-        </div>
         <button 
           onClick={onClose}
-          className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition"
+          className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
         >
-          Got it! Let's start.
+          Confirm & Start
         </button>
       </div>
     </div>
   );
-};
+}
