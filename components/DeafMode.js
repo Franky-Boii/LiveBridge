@@ -7,20 +7,38 @@ export default function DeafMode({ incomingText, selectedVoiceURI, onVoiceChange
   useEffect(() => {
     const loadVoices = () => {
       const allVoices = window.speechSynthesis.getVoices();
-      // Filter voices based on the selected language (e.g., 'en', 'es', 'fr')
-      const langCode = language.split('-')[0];
-      const filtered = allVoices.filter(v => v.lang.startsWith(langCode));
       
+      // 1. Get the primary language code (e.g., 'zu' from 'zu-ZA')
+      const primaryLang = language.split('-')[0];
+
+      // 2. Filter for any voice that matches that primary language
+      let filtered = allVoices.filter(v => v.lang.startsWith(primaryLang));
+
+      // 3. CRITICAL FALLBACK: If no Zulu/Xhosa voices exist on the device, 
+      // default to English so the app doesn't "break" during the demo.
+      if (filtered.length === 0) {
+        filtered = allVoices.filter(v => v.lang.startsWith('en'));
+      }
+
       setVoices(filtered);
       
-      // If the current selected voice isn't in the new filtered list, reset it
-      if (filtered.length > 0 && (!selectedVoiceURI || !filtered.find(v => v.voiceURI === selectedVoiceURI))) {
-        onVoiceChange(filtered[0].voiceURI);
+      // 4. Smart Auto-Selection
+      if (filtered.length > 0) {
+        // Try to find a regional match first (e.g., finding an 'en-ZA' voice for 'en-ZA' language)
+        const regionalMatch = filtered.find(v => v.lang === language);
+        const bestVoice = regionalMatch || filtered[0];
+        
+        if (!selectedVoiceURI || !filtered.find(v => v.voiceURI === selectedVoiceURI)) {
+          onVoiceChange(bestVoice.voiceURI);
+        }
       }
     };
 
+    // Some browsers load voices asynchronously
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }, [language, selectedVoiceURI, onVoiceChange]);
 
   const handleSpeak = (textToSpeak) => {
