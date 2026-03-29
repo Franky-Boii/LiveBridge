@@ -104,7 +104,7 @@ export default function LiveBridge() {
   };
 
   if (!activeMode) {
-    const baseUrl = "https://livebridgecom.netlify.app"; 
+    const baseUrl = "https://livebridgelive.netlify.app"; 
     const shareUrl = `${baseUrl}?room=${roomID}`;
 
     return (
