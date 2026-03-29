@@ -34,8 +34,6 @@ export default function LiveBridge() {
         filter: `room_id=eq.${roomID}` 
       }, (payload) => {
         const newMessage = payload.new;
-        
-        // 1. Update History (The logs)
         setHistory(prev => {
           if (prev.find(m => m.id === newMessage.id)) return prev;
           return [...prev, { 
@@ -43,11 +41,7 @@ export default function LiveBridge() {
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
           }];
         });
-
-        // 2. Update Live Transcript (The big bubble for the Deaf user)
-        if (newMessage.sender === 'hearing') {
-          setTranscript(newMessage.text);
-        }
+        if (newMessage.sender === 'hearing') setTranscript(newMessage.text);
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, () => {
         setHistory([]);
@@ -61,24 +55,17 @@ export default function LiveBridge() {
     return () => supabase.removeChannel(channel);
   }, [roomID]);
 
-  // --- 📤 SEND FUNCTION (Triggered only on FINAL speech) ---
+  // --- 📤 SEND FUNCTION ---
   const handleMessagePush = async (sender, text) => {
     if (!text || text.trim() === "") return;
-
     if (sender === 'hearing') {
-      // Clear the "listening" state when the final message is sent
       supabase.channel(`room-${roomID}`).send({
         type: 'broadcast',
         event: 'speaking_state',
         payload: { isSpeaking: false },
       });
     }
-
-    const { error } = await supabase.from('messages').insert([
-      { room_id: roomID, sender, text }
-    ]);
-    
-    if (error) console.error("Sync Error:", error);
+    await supabase.from('messages').insert([{ room_id: roomID, sender, text }]);
   };
 
   const setLocalSpeaking = (isSpeaking) => {
@@ -95,6 +82,27 @@ export default function LiveBridge() {
     }
   };
 
+  // --- 📥 QR CODE DOWNLOAD LOGIC ---
+  const downloadQRCode = () => {
+    const svg = document.getElementById("qr-code-download");
+    const svgData = new XMLSerializer().serializeToString(svg);
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+    
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const pngFile = canvas.toDataURL("image/png");
+      const downloadLink = document.createElement("a");
+      downloadLink.download = `LiveBridge-Room-${roomID}.png`;
+      downloadLink.href = `${pngFile}`;
+      downloadLink.click();
+    };
+    img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)));
+  };
+
   if (!activeMode) {
     const baseUrl = "https://livebridgecom.netlify.app"; 
     const shareUrl = `${baseUrl}?room=${roomID}`;
@@ -102,17 +110,30 @@ export default function LiveBridge() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-slate-50 text-center">
         <h1 className="text-4xl font-black mb-2 tracking-tighter italic text-slate-800 uppercase">LiveBridge</h1>
-        <p className="text-slate-500 mb-6 font-medium uppercase text-[10px] tracking-[0.3em]">Scan to Bridge Devices</p>
+        <p className="text-slate-500 mb-6 font-medium uppercase text-[10px] tracking-[0.3em]">Invite your Bridge Partner</p>
         
-        <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-8 border-8 border-white">
-          <QRCodeSVG value={shareUrl} size={180} fgColor="#1e293b" includeMargin={true} />
+        <div className="bg-white p-6 rounded-[40px] shadow-2xl mb-4 border-8 border-white flex flex-col items-center">
+          <QRCodeSVG 
+            id="qr-code-download"
+            value={shareUrl} 
+            size={180} 
+            fgColor="#1e293b" 
+            includeMargin={true} 
+          />
         </div>
+
+        <button 
+          onClick={downloadQRCode}
+          className="mb-8 text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 hover:bg-blue-100 transition-all active:scale-95"
+        >
+          📥 Download & Share QR
+        </button>
 
         <div className="w-full max-w-xs space-y-4">
           <button onClick={() => setActiveMode('hearing')} className="w-full bg-blue-600 text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-blue-200 active:scale-95 transition-transform">I am Hearing 🎤</button>
           <button onClick={() => setActiveMode('deaf')} className="w-full bg-slate-800 text-white py-6 rounded-3xl font-black uppercase tracking-widest shadow-xl shadow-slate-200 active:scale-95 transition-transform">I am Deaf/HoH 📱</button>
         </div>
-        <p className="mt-6 text-[10px] font-black text-slate-300 uppercase tracking-widest">ID: {roomID}</p>
+        <p className="mt-6 text-[10px] font-black text-slate-300 uppercase tracking-widest">Room ID: {roomID}</p>
       </div>
     );
   }
@@ -167,22 +188,10 @@ export default function LiveBridge() {
 
       <main className="flex-1 flex flex-col">
         {activeMode === "hearing" && (
-          <HearingMode 
-            language={language} 
-            mode={isInterviewMode ? 'interview' : 'standard'} 
-            onSpeakingChange={setLocalSpeaking} 
-            onSimplified={(text) => handleMessagePush('hearing', text)} 
-          />
+          <HearingMode language={language} mode={isInterviewMode ? 'interview' : 'standard'} onSpeakingChange={setLocalSpeaking} onSimplified={(text) => handleMessagePush('hearing', text)} />
         )}
         {activeMode === "deaf" && (
-          <DeafMode 
-            incomingText={transcript} 
-            isRemoteSpeaking={isRemoteSpeaking} 
-            language={language} 
-            selectedVoiceURI={selectedVoiceURI} 
-            onVoiceChange={(uri) => setSelectedVoiceURI(uri)} 
-            onReplySent={(replyText) => handleMessagePush('deaf', replyText)} 
-          />
+          <DeafMode incomingText={transcript} isRemoteSpeaking={isRemoteSpeaking} language={language} selectedVoiceURI={selectedVoiceURI} onVoiceChange={(uri) => setSelectedVoiceURI(uri)} onReplySent={(replyText) => handleMessagePush('deaf', replyText)} />
         )}
         {activeMode === "history" && (
           <div className="flex flex-col h-full">
