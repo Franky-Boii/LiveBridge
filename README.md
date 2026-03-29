@@ -1,51 +1,44 @@
-<img width="1440" height="813" alt="Screenshot 2026-03-28 at 10 58 25" src="https://github.com/user-attachments/assets/bb37cec3-a7b5-4c87-992f-325a8099d2d4" />
-<img width="1440" height="813" alt="Screenshot 2026-03-28 at 11 00 02" src="https://github.com/user-attachments/assets/e582d7b8-72fc-4e77-b9ef-da8d08c18b1e" />
-🌉 LiveBridge: The Real-Time Accessibility Hub
-🎯 The Mission
-LiveBridge was built to dismantle the "double barrier" of communication. While many tools provide simple transcription, they often fail in high-speed, real-world interactions where background noise, rambling speech, and language differences make traditional STT (Speech-to-Text) overwhelming for deaf users.
+<img width="450" height="804" alt="Screenshot 2026-03-29 at 09 50 09" src="https://github.com/user-attachments/assets/9d007a9c-f405-4eac-afec-299d3d16d0e9" />
+<img width="450" height="804" alt="Screenshot 2026-03-29 at 09 51 18" src="https://github.com/user-attachments/assets/86779ca3-3c84-4192-9a8c-a771edf16eba" />
+<img width="450" height="804" alt="Screenshot 2026-03-29 at 09 51 53" src="https://github.com/user-attachments/assets/48001dbf-dd1a-41f6-9ffc-503b4140c4ef" />
 
-Our aim is to provide Dignity through Clarity—giving deaf individuals a tool that doesn't just "listen," but understands and simplifies.
+# 🌉 LIVEBRIDGE
 
-🧠 The Core Concepts
-AI-Driven Simplification: We use LLMs to strip away verbal "filler" (uhs, ums, tangents) to present the deaf user with the core intent of a sentence.
 
-Identity-First Speech: By providing a variety of regional voices, users can choose a "voice" that matches their identity, making the outgoing speech feel like them, not a machine.
+> **Breaking barriers between the Hearing and Deaf worlds through Real-time AI Simplification.**
 
-Global Inclusivity: Integrated multilingual support allows for cross-cultural communication, serving as both an accessibility bridge and a real-time translator.
+LiveBridge is a professional accessibility suite designed to empower Deaf and Hard-of-Hearing (HoH) individuals in workplace environments, interviews, and lectures. It transforms complex spoken language into high-readability text in real-time across multiple devices.
 
-⚙️ Technical Architecture
-LiveBridge is a Serverless Progressive Web App (PWA) designed for zero-latency communication.
+---
 
-The Ears (STT): Utilizes the Web Speech API for instant, on-device audio processing, ensuring the UI remains responsive without waiting for heavy audio uploads.
+## ✨ Key Features
 
-The Brain (AI): A Next.js API Layer proxies requests to OpenAI’s GPT-4o-mini. It processes raw transcripts and "distills" them into simplified, accessible sentences based on the selected global language.
+* **🌍 Global Realtime Sync:** Built on Supabase WebSockets, allowing a speaker and a reader to communicate from across the room or across the globe.
+* **🧠 AI Contextual Simplification:** Powered by GPT-4o-mini to strip away jargon and complex sentence structures while keeping the core meaning.
+* **🇿🇦 SADC Language Support:** Deep support for South African languages including isiZulu, isiXhosa, Sesotho, and Afrikaans.
+* **🎯 Interview Mode:** A specialized toggle that adds visual cues (❓) and haptic nudges to help users navigate professional high-stakes conversations.
+* **📱 Frictionless Onboarding:** Instant room joining via a dynamically generated QR code—no account creation required.
+* **🌊 Presence Indicators:** A live visual waveform that gives Deaf users "audio presence," showing them exactly when someone is speaking before the text arrives.
+* **📳 Haptic Nudge:** Physical vibration alerts when new information is ready to be read.
 
-The Voice (TTS): Leverages SpeechSynthesis to provide natural-sounding responses, mapped to the user's regional settings and personal voice preference.
+---
 
-The Paper Trail: A centralized state management system records every "bridge" crossed, providing a persistent Session Transcript for later reference.
+## 🚀 Technical Stack
 
-🌍 Impact & Future Vision
-LiveBridge is designed for:
+* **Frontend:** Next.js (React)
+* **Styling:** Tailwind CSS
+* **Backend/Realtime:** Supabase (PostgreSQL + WebSockets)
+* **AI Engine:** OpenAI API (GPT-4o-mini)
+* **Speech-to-Text:** Web Speech API (Chrome Optimized)
+* **Deployment:** Netlify
 
-Emergency Services: Fast, clear communication between first responders and deaf individuals.
+---
 
-Daily Commerce: Enabling seamless interactions at coffee shops, banks, and grocery stores.
+## 🛠️ Local Setup Instructions
 
-Travel: Breaking down both the hearing and language barrier for international travelers.
+To run this project locally, follow these steps:
 
-Future Roadmap:
-
-Integrating MediaPipe for basic sign-language gesture recognition.
-
-Implementing WebSockets for multi-device "Shared Room" conversations.
-
-Offline AI processing for use in remote areas.
-
-🚀 Setup & Installation
-Clone the repo.
-
-Run npm install.
-
-Create a .env.local with your OPENAI_API_KEY.
-
-Run npm run dev.
+1. **Clone the repository:**
+   ```bash
+   git clone [your-repo-url]
+   cd livebridge
