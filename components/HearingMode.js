@@ -1,66 +1,93 @@
 import { useState } from 'react';
 
-export default function HearingMode({ onSimplified, language, mode }) {
+export default function HearingMode({ onSimplified, language, mode, onSpeakingChange }) {
   const [status, setStatus] = useState("idle"); 
-  const [clarity, setClarity] = useState(null); // NEW: 🟢 🟡 🔴 State
+  const [clarity, setClarity] = useState(null); 
+  const [localPreview, setLocalPreview] = useState(""); // NEW: Live text preview
 
   const startListening = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) return alert("Please use Google Chrome for the best experience!");
+    if (!SpeechRecognition) return alert("Please use Google Chrome!");
 
     const recognition = new SpeechRecognition();
     recognition.lang = language;
-    recognition.interimResults = false; 
+    
+    // 1. IMPORTANT: Set to true so we can show live typing
+    recognition.interimResults = true; 
+    recognition.continuous = false; // Stops once you pause, ensuring one clean message
 
     recognition.onstart = () => {
       setStatus("listening");
-      setClarity(null); // Reset clarity on new start
+      setClarity(null);
+      setLocalPreview("");
+      if (onSpeakingChange) onSpeakingChange(true); // Waves start dancing
     };
 
     recognition.onresult = async (event) => {
-      const result = event.results[0][0];
-      const speechToText = result.transcript;
-      const confidence = result.confidence; // NEW: Browser's confidence score (0 to 1)
+      let finalTranscript = '';
+      let interimTranscript = '';
 
-      // --- 1. CLARITY CHECK LOGIC ---
-      if (confidence > 0.85) setClarity("high");    // 🟢 Excellent
-      else if (confidence > 0.65) setClarity("med"); // 🟡 Okay
-      else setClarity("low");                        // 🔴 Muffled/Quiet
-
-      setStatus("processing");
-      
-      try {
-        const res = await fetch('/api/simplify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            text: speechToText, 
-            language: language,
-            mode: mode // Pass 'interview' or 'standard'
-          }) 
-        });
-        const data = await res.json();
-
-        // --- 2. HAPTIC NUDGE TRIGGER ---
-        // We trigger the vibration here so the Deaf user feels the "ping"
-        // exactly when the message is ready to read.
-        if ("vibrate" in navigator) {
-          navigator.vibrate([100, 50, 100]); // Double-tap pulse
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+          
+          // --- CLARITY CHECK ---
+          const confidence = event.results[i][0].confidence;
+          if (confidence > 0.85) setClarity("high");
+          else if (confidence > 0.65) setClarity("med");
+          else setClarity("low");
+        } else {
+          interimTranscript += event.results[i][0].transcript;
         }
+      }
 
-        onSimplified(data.simplified || speechToText);
-      } catch (e) {
-        onSimplified(speechToText);
+      // Show the speaker what they are saying in real-time
+      setLocalPreview(interimTranscript || finalTranscript);
+
+      // 2. 🚀 THE "ONE LINE" FIX: Only process AI and Push when the result is FINAL
+      if (finalTranscript.trim() !== "") {
+        setStatus("processing");
+        if (onSpeakingChange) onSpeakingChange(false); // Waves stop
+
+        try {
+          const res = await fetch('/api/simplify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              text: finalTranscript, 
+              language: language,
+              mode: mode 
+            }) 
+          });
+          const data = await res.json();
+
+          // Trigger vibration and push to the "Global Bridge"
+          if ("vibrate" in navigator) navigator.vibrate([100, 50, 100]);
+          onSimplified(data.simplified || finalTranscript);
+          
+          setLocalPreview(""); // Clear preview after sending
+        } catch (e) {
+          onSimplified(finalTranscript);
+        }
       }
     };
 
-    recognition.onerror = () => setStatus("idle");
-    recognition.onend = () => setStatus("idle");
+    recognition.onerror = () => {
+        setStatus("idle");
+        if (onSpeakingChange) onSpeakingChange(false);
+    };
+    
+    recognition.onend = () => {
+        setStatus("idle");
+        if (onSpeakingChange) onSpeakingChange(false);
+    };
+
     recognition.start();
   };
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center space-y-10">
+    <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+      
       {/* 🟢 🟡 🔴 CLARITY INDICATOR */}
       <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100">
         <div className={`w-3 h-3 rounded-full ${
@@ -75,29 +102,25 @@ export default function HearingMode({ onSimplified, language, mode }) {
         </span>
       </div>
 
-      <div className="text-center">
-        <h2 className="text-3xl font-black text-slate-800 uppercase tracking-tighter">
-          {status === 'listening' ? "Speaker's Turn" : "Hearing Mode"}
-        </h2>
-        <p className="text-slate-400 font-bold text-xs mt-2 uppercase tracking-widest">
-          Input: <span className="text-blue-600">{language}</span>
+      {/* LIVE PREVIEW AREA: This shows the speaker what they are saying before it sends */}
+      <div className="h-16 w-full max-w-xs text-center px-4">
+        <p className="text-slate-400 italic text-sm line-clamp-2">
+          {localPreview ? `"${localPreview}..."` : ""}
         </p>
       </div>
 
       <button 
         onClick={startListening}
         disabled={status === 'processing'}
-        className={`relative group w-56 h-56 rounded-full flex items-center justify-center transition-all duration-500 border-[12px] shadow-2xl ${
+        className={`relative group w-48 h-48 rounded-full flex items-center justify-center transition-all duration-500 border-[12px] shadow-2xl ${
           status === 'listening' 
             ? 'border-red-500 bg-red-50 scale-110' 
             : 'border-blue-600 bg-blue-50 hover:scale-105'
         }`}
       >
-        <span className={`text-7xl transition-transform ${status === 'listening' ? 'scale-75 animate-pulse' : ''}`}>
+        <span className={`text-6xl transition-transform ${status === 'listening' ? 'scale-75 animate-pulse' : ''}`}>
           {status === 'listening' ? "⏹" : "🎤"}
         </span>
-        
-        {/* Visual Pulse for the Speaker */}
         {status === 'listening' && (
           <div className="absolute inset-0 rounded-full border-4 border-red-400 animate-ping opacity-25" />
         )}
