@@ -53,7 +53,7 @@ To run this project locally, follow these steps:
 
 Bash
 
-git clone [your-repo-url]
+git clone [git@github.com:Franky-Boii/LiveBridge.git]
 
 cd livebridge
 
