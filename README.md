@@ -82,6 +82,10 @@ Bash
 npm run dev
 Open http://localhost:3000 in Google Chrome.
 
+**Live Deployment link**
+
+Netlify: [https://livebridgelive.netlify.app/]
+
 **🎯 The Vision**
 
 LiveBridge was born from the need to dismantle career barriers faced by Deaf professionals in the South African job market. 
